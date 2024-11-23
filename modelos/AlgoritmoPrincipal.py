@@ -25,20 +25,18 @@ class AlgoritmoPrincipal:
         ic(t_proceso)
 
     def encontrar_particion_menor(self):
-        conjuntoV = self.__matriz.pasar_cadena_a_lista()
-        ic(conjuntoV)
         conjuntoA= self.__matriz.crear_conjunto_a()
-        ic(conjuntoA)
-        self.algoritmo_principal(conjuntoV)
+        ic(conjuntoA) # (0,0), (0,1), (1,0), (1,1)
+        self.algoritmo_principal(conjuntoA)
 
-    def algoritmo_principal(self, V): 
-        if(len(V) == 1):
+    def algoritmo_principal(self, A): 
+        if(len(A) == 1):
             return
-        W = [V[0]]
-        for i in range(len(V) - 1):
-            mejor_iteracion = ()
-            for j in list(set(V) - set(W)):
-                subsistema = list(chain.from_iterable((i,) if isinstance(i[0], int) else i for i in W))
+        W = [A[0]] #! debe ser aleatorio aA
+        for i in range(len(A) - 1):
+            mejor_iteracion = () #aB, bA, bB
+            for j in list(set(A) - set(W)):
+                subsistema = list(chain.from_iterable((i,) if isinstance(i[0], int) else i for i in W)) # devuelve una lista de tuplas
                 u = []
                 subsistema.extend(j if isinstance(j[0], tuple) else [j])
                 u.extend(j if isinstance(j[0], tuple) else [j])
@@ -58,13 +56,14 @@ class AlgoritmoPrincipal:
             self.__particiones_candidatas.append([resultadoEMD_nu[0], resultadoEMD_nu[1], (W[-1], W[:-1])])
             par_candidato = (W[-2], W[-1])
             # Quitar al arreglo v todos los elementos del par candidato
-            V = list(set(V) - set(par_candidato))
+            A = list(set(A) - set(par_candidato))
             par_candidato_final = self.combinar_tuplas(par_candidato[0], par_candidato[1])
-            V.append(par_candidato_final)
+            A.append(par_candidato_final)
 
-        self.algoritmo_principal(V)
+        self.algoritmo_principal(A)
     
     def realizar_emd(self, lista):
+        #aA, aB (0,0), (0,1)
         matriz_normal, matriz_complemento = self.__matriz.marginalizar_normal_complemento(lista)
         est_n, est_c = self.__matriz.get_estado_inicial_n_c()
         self.__matriz.limpiar_estados_inicialies()

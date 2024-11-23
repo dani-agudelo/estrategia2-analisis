@@ -184,34 +184,15 @@ class MatrizTPM:
     Marginalización por filas y columnas
     ------------------------------------------------------------------------------------------------
     """
-    def marginalizar_normal_complemento(self, lista_subsistema):
-        cadena_presente = self.pasar_lista_a_cadena(lista_subsistema, 0)
-        cadena_futuro = self.pasar_lista_a_cadena(lista_subsistema, 1)
-
-        normal = self.marginalizar_bits(cadena_presente, cadena_futuro, '1')
-        complemento = self.marginalizar_bits(cadena_presente, cadena_futuro, '0')
-
-        indices_n = self.obtener_indices(cadena_futuro, '1')
-        indices_c = self.obtener_indices(cadena_futuro, '0')
-
-        i = 0
-        j = 0
-        while i < len(indices_n) and j < len(indices_c):
-            if indices_n[i] < indices_c[j]:
-                indices_n[i] = self.__listado_valores_futuros[indices_n[i]]
-                i += 1
-            else:
-                indices_c[j] = self.__listado_valores_futuros[indices_c[j]]
-                j += 1
-        while i < len(indices_n):
-            indices_n[i] = self.__listado_valores_futuros[indices_n[i]]
-            i += 1
-        while j < len(indices_c):
-            indices_c[j] = self.__listado_valores_futuros[indices_c[j]]
-            j += 1
-        
-        return (normal, indices_n), (complemento, indices_c)
-
+   # (0, 0), (1, 0) aA, bA, cB --> a y b, agrupamos por la segunda posición: A
+   # cadena presente 0011, cadena futuro 1000
+   
+   def tupla_a_cadena(self, lista_tuplas):
+       # llega una lista de tuplas asi (0, 0), (1, 0)...
+       # recorremos la lista y por cada una, se agrupa por la segunda posición para crear la cadena
+       #(0, 0), (1, 0) (0, 2) --> aA, bA, aC --> cadena presente
+       # (A: ab),  (C: a) 
+   
     def marginalizar_bits(self, cadena_presente, cadena_futuro, bit):
         '''
         Marginaliza las filas y columnas de la matriz que no pertenecen al subsistema presente y futuro.
