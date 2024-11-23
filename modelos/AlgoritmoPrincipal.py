@@ -31,8 +31,7 @@ class AlgoritmoPrincipal:
         ic(conjuntoA)
         self.algoritmo_principal(conjuntoV)
 
-    def algoritmo_principal(self, V):
-        #! cambiar caso base a 2
+    def algoritmo_principal(self, V): 
         if(len(V) == 1):
             return
         W = [V[0]]

@@ -439,6 +439,8 @@ class MatrizTPM:
         Retorna:
             Lista con todas las aristas del grafo bipartito.
             (a, b) donde a es el nodo del subsistema presente y b el del futuro.
+            [(0, 0), (0, 1), (1, 0), (1, 1)]
+              aA,     aB,    bA,    bB
         '''
         indices_f = self.obtener_indices(self.__sistema.get_subsistema_futuro(), "1")
         indices_p = self.obtener_indices(self.__sistema.get_subsistema_presente(), "1")
