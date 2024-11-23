@@ -17,12 +17,13 @@ class AlgoritmoPrincipal:
         self.__matriz.obtener_estado_nodo()
         self.__matriz.matriz_subsistema()
         self.__matriz.get_matriz_subsistema()
-        t_inicio = time.time()
-        self.encontrar_particion_menor()
-        ic(self.comparar_particiones())
-        t_fin = time.time()
-        t_proceso = t_fin - t_inicio
-        ic(t_proceso)
+        self.__matriz.prueba_marginalizar_aristas()
+        # t_inicio = time.time()
+        # self.encontrar_particion_menor()
+        # ic(self.comparar_particiones())
+        # t_fin = time.time()
+        # t_proceso = t_fin - t_inicio
+        # ic(t_proceso)
 
     def encontrar_particion_menor(self):
         conjuntoA= self.__matriz.crear_conjunto_a()

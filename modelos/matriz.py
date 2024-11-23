@@ -18,7 +18,7 @@ class MatrizTPM:
         self.__listado_valores_futuros = []
         self.__listado_valores_presentes = []
         self.__sistema = Sistema('condiciones/estructura_5.csv')
-        self.__estado_inicial_subsistema= None
+        self.__estado_inicial_subsistema = None
         self.__estado_i_normal = ''
         self.__estado_i_complemento = ''
         self.indexar_matriz() if route is not None else self.__matriz.values
@@ -184,15 +184,40 @@ class MatrizTPM:
     Marginalización por filas y columnas
     ------------------------------------------------------------------------------------------------
     """
-   # (0, 0), (1, 0) aA, bA, cB --> a y b, agrupamos por la segunda posición: A
-   # cadena presente 0011, cadena futuro 1000
-   
-   def tupla_a_cadena(self, lista_tuplas):
-       # llega una lista de tuplas asi (0, 0), (1, 0)...
-       # recorremos la lista y por cada una, se agrupa por la segunda posición para crear la cadena
-       #(0, 0), (1, 0) (0, 2) --> aA, bA, aC --> cadena presente
-       # (A: ab),  (C: a) 
-   
+    # (0, 0), (1, 0) aA, bA, cB --> a y b, agrupamos por la segunda posición: A
+    # cadena presente 0011, cadena futuro 1000
+    
+    def marginalizar_aristas(self, lista_aristas):
+        vertices_por_marginalizar = tuplas = self.tupla_a_cadena(lista_aristas)
+        temporal = self.__matriz_no_futuro.copy()
+
+        for index, content in enumerate(vertices_por_marginalizar):
+            cadena_presente = self.pasar_lista_a_cadena(content, 0) # 110
+            key = self.__listado_valores_futuros[index]
+            ic(self.__matriz_estado_nodo_marginalizadas[key])
+            matriz_futuro = self.__matriz_estado_nodo_marginalizadas[key].copy()
+            matriz_marginalizada = self.marginalizar_filas(cadena_presente, matriz_futuro, '0')
+            ic(cadena_presente)
+            ic(matriz_futuro)
+            ic(key)
+            ic(matriz_marginalizada)
+            
+            # 
+            # sub_presente = "".join([self.__sistema.get_subsistema_presente()[i] for i in self.__listado_candidatos])
+            # indices_temporal = []
+            # for i in indices_f:
+            #     matriz_futuro = self.__matriz_estado_nodo_dict[i].copy()
+            #     matriz_marginalizada = self.marginalizar_filas(sub_presente, matriz_futuro, '1')
+            #     self.__matriz_estado_nodo_marginalizadas[i] = matriz_marginalizada
+            #     temporal = self.producto_tensorial_matrices(temporal, matriz_marginalizada, indices_temporal, [i], self.__estado_inicial_subsistema, self.__estado_inicial_subsistema)
+            #     indices_temporal.append(i)
+
+    def expandir(self, cadena_presente):
+        pass
+    
+    def prueba_marginalizar_aristas(self):
+        self.marginalizar_aristas([(0, 0), (1, 0), (1, 1)])
+
     def marginalizar_bits(self, cadena_presente, cadena_futuro, bit):
         '''
         Marginaliza las filas y columnas de la matriz que no pertenecen al subsistema presente y futuro.
@@ -392,9 +417,6 @@ class MatrizTPM:
         
         # Convierte la lista de caracteres de vuelta a una cadena
         return cadena_dinamica
-    
-    def producto_tensorial_chevre(self, histograma1, histograma2):
-        ...
 
     def pasar_cadena_a_lista(self):
         """
@@ -438,52 +460,20 @@ class MatrizTPM:
         self.__estado_i_complemento = ''
         self.__estado_inicial_subsistema = ''
 
-    def prueba_lista(self):
-        # Verificar que no ingrese variables que no estén en el sistema candidato
-        # 1101 ABD A, B, D = 0, 1, 3
-        lista = [(0, 0), (1, 1), (0, 1), (1, 3)]
-        # BD|ab
-        # 0101 cadena futuro 011
-        # 1100 cadena presente 110
-        #0101 cadena futuro 011=  100 
+    def tupla_a_cadena(self, lista_tuplas):
+        # llega una lista de tuplas asi (0, 0), (1, 0)...
+        # recorremos la lista y por cada una, se agrupa por la segunda posición para crear la cadena
+        #(0, 0), (1, 0) (0, 2) --> aA, bA, aC --> cadena presente
+        # (A: ab),  (C: a) 
         
-        cadena_presente = self.pasar_lista_a_cadena(lista, 0)
-        cadena_futuro = self.pasar_lista_a_cadena(lista, 1)
+        presentes_a_marginalizar = [[] for _ in self.__listado_valores_futuros]
+        for tupla in lista_tuplas:
+            try:
+                indice = self.__listado_valores_futuros.index(tupla[1])
+                presentes_a_marginalizar[indice].append((0, tupla[0]))
+            except ValueError:
+                print(f"Indice {tupla[1]} no encontrado en la lista de valores futuros.")
         
-        
-    def prueba_producto_tensorial(self):
-        #mandamos del diccionario self.__matriz_estado_nodo_dict el indice 0 y 2
-   
-        matriz1 = self.__matriz_estado_nodo_dict[0]
-        matriz2 = self.__matriz_estado_nodo_dict[1]
-        indices1 = [0]
-        indices2 = [1]
-        
-        indices3= [0, 1]
-        indices4= [2]
-        
-        matriz3 = self.__matriz_estado_nodo_dict[2]
-        
-        matriz1 = self.marginalizar_filas(self.__sistema.get_subsistema_presente(), matriz1, '1')
-        matriz2 = self.marginalizar_filas(self.__sistema.get_subsistema_presente(), matriz2, '1')
-        matriz3 = self.marginalizar_filas(self.__sistema.get_subsistema_presente(), matriz3, '1')
-
-        resultado = self.producto_tensorial_matrices(matriz1, matriz2, indices1, indices2)
-        print(resultado, 'ab')
-        
-        resultado2= self.producto_tensorial_matrices(matriz3, resultado, indices4, indices3)
-        print(resultado2, 'abc')
-
-        print("Resultado final", resultado2)
-    
-    def prueba_marginalizar(self):
-        #mandamos del diccionario self.__matriz_estado_nodo_dict el indice 0 y 2
-        # lista = [(0, 0), (1, 1), (0, 1), (1, 3)]
-        ic(self.get_dic_marginalizadas())
-        lista = [(0, 0), (1, 0)]
-        
-        # A|a normal
-        normal, complemento = self.marginalizar_normal_complemento(lista)
-        ic(normal)
-        ic(complemento)
+        ic(presentes_a_marginalizar)
+        return presentes_a_marginalizar
     
