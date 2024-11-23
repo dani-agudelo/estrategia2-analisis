@@ -414,7 +414,7 @@ class MatrizTPM:
     def crear_conjunto_a(self):
         '''
         Genera todas las combinaciones de aristas entre nodos del subsistema presente y futuro. 
-        Se basa en un grafo bipartito completo.
+        Se basa en un grafo bipartito completo. a
         Si se tiene un subsistema presente de m nodos y uno futuro de n nodos, se generan m*n aristas.
         
         Retorna:
