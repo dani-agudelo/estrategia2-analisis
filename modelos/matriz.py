@@ -198,8 +198,14 @@ class MatrizTPM:
             matriz_marginalizada = self.marginalizar_filas(cadena_presente, matriz_futuro, '0')
             bits_matriz_futuro = self.obtener_indices(cadena_presente, '0')
             matriz_futuro = self.__matriz_estado_nodo_marginalizadas[key].copy()
-            matriz_futuro_expandida = self.expandir(matriz_marginalizada, matriz_futuro, bits_matriz_futuro)
+            if len(bits_matriz_futuro) == 0:
+                matriz_futuro_expandida = matriz_futuro
+            else:
+                matriz_futuro_expandida = self.expandir(matriz_marginalizada, matriz_futuro, bits_matriz_futuro)
             
+            # Hacer producto tensorial con la matriz expandida
+            temporal = self.producto_tensorial_matrices(temporal, matriz_futuro_expandida, [], [key], self.__estado_inicial_subsistema, self.__estado_inicial_subsistema)
+
             # 
             # sub_presente = "".join([self.__sistema.get_subsistema_presente()[i] for i in self.__listado_candidatos])
             # indices_temporal = []
