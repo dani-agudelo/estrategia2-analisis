@@ -188,19 +188,17 @@ class MatrizTPM:
     # cadena presente 0011, cadena futuro 1000
     
     def marginalizar_aristas(self, lista_aristas):
-        vertices_por_marginalizar = tuplas = self.tupla_a_cadena(lista_aristas)
+        vertices_por_marginalizar = self.tupla_a_cadena(lista_aristas)
         temporal = self.__matriz_no_futuro.copy()
 
         for index, content in enumerate(vertices_por_marginalizar):
             cadena_presente = self.pasar_lista_a_cadena(content, 0) # 110
             key = self.__listado_valores_futuros[index]
-            ic(self.__matriz_estado_nodo_marginalizadas[key])
             matriz_futuro = self.__matriz_estado_nodo_marginalizadas[key].copy()
             matriz_marginalizada = self.marginalizar_filas(cadena_presente, matriz_futuro, '0')
-            ic(cadena_presente)
-            ic(matriz_futuro)
-            ic(key)
-            ic(matriz_marginalizada)
+            bits_matriz_futuro = self.obtener_indices(cadena_presente, '0')
+            matriz_futuro = self.__matriz_estado_nodo_marginalizadas[key].copy()
+            matriz_futuro_expandida = self.expandir(matriz_marginalizada, matriz_futuro, bits_matriz_futuro)
             
             # 
             # sub_presente = "".join([self.__sistema.get_subsistema_presente()[i] for i in self.__listado_candidatos])
@@ -212,8 +210,17 @@ class MatrizTPM:
             #     temporal = self.producto_tensorial_matrices(temporal, matriz_marginalizada, indices_temporal, [i], self.__estado_inicial_subsistema, self.__estado_inicial_subsistema)
             #     indices_temporal.append(i)
 
-    def expandir(self, cadena_presente):
-        pass
+    def expandir(self, matriz_marginalizada, matriz_estado_nodo, lista_presentes):
+        for indice_grande in matriz_estado_nodo.index:
+            # Obtener el índice del dataframe pequeño que corresponde al índice grande
+            indice_marginalizada = self.obtener_fila_pequeno(indice_grande, lista_presentes)
+            # Reemplazar los valores en la fila del dataframe grande
+            matriz_estado_nodo.loc[indice_grande] = matriz_marginalizada.loc[indice_marginalizada]
+        return matriz_estado_nodo
+
+    def obtener_fila_pequeno(self, indice_grande, posiciones):
+        # Seleccionar los bits según las posiciones
+        return ''.join(indice_grande[i] for i in posiciones)
     
     def prueba_marginalizar_aristas(self):
         self.marginalizar_aristas([(0, 0), (1, 0), (1, 1)])
