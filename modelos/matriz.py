@@ -164,7 +164,6 @@ class MatrizTPM:
                 indices.append(idx)
         return indices
     
-    #! ¿Debe cambiar? si se trabaja con aristas
     def matriz_subsistema(self):
         indices_f = self.obtener_indices(self.__sistema.get_subsistema_futuro(), '1') # 0, 1, 2
         temporal = self.__matriz_no_futuro.copy()
@@ -185,43 +184,54 @@ class MatrizTPM:
     ------------------------------------------------------------------------------------------------
     """
     # (0, 0), (1, 0) aA, bA, cB --> a y b, agrupamos por la segunda posición: A
-    # cadena presente 0011, cadena futuro 1000
+    # cadena presente 0011, cadena futuro 1000 
     
     def marginalizar_aristas(self, lista_aristas):
+        # Pasar la lista de aristas a lista otro formato, en donde cada posicion de la lista
+        # representa un nodo del futuro, ej: [(0,1), (0,2)] -> [[], [(0,0)], [(0,0)]]
         vertices_por_marginalizar = self.tupla_a_cadena(lista_aristas)
-        temporal = self.__matriz_no_futuro.copy()
+        temporal = self.__matriz_no_futuro.copy() # matriz de estado nodo sin futuro en vacío
+        indices_temporal = []
 
         for index, content in enumerate(vertices_por_marginalizar):
-            cadena_presente = self.pasar_lista_a_cadena(content, 0) # 110
+            # Obtiene la cadena dependiendo de la lista pasada
+            # Ej: [(0,0)] -> 100
+            cadena_presente = self.pasar_lista_a_cadena(content, 0)
+
+            # Accedemos al estado-nodo dependiendo del indice de vertices_por_marginalizar
+            # Ej: listado_valores_futuros = [0, 2, 3], obtenemos 2 si estamos en la segunda lista
             key = self.__listado_valores_futuros[index]
             matriz_futuro = self.__matriz_estado_nodo_marginalizadas[key].copy()
+
+            # Marginalizar las filas conservando aquellas que esten en 0 en la cadena_presente
             matriz_marginalizada = self.marginalizar_filas(cadena_presente, matriz_futuro, '0')
+
+            # Obtenemos los indices de la matriz marginalizada 
             bits_matriz_futuro = self.obtener_indices(cadena_presente, '0')
             matriz_futuro = self.__matriz_estado_nodo_marginalizadas[key].copy()
-            if len(bits_matriz_futuro) == 0:
+
+            # Expandimos la matriz marginalizada o cogemos la matriz estado-nodo directamente
+            if len(bits_matriz_futuro) == len(self.__listado_valores_presentes):
                 matriz_futuro_expandida = matriz_futuro
             else:
                 matriz_futuro_expandida = self.expandir(matriz_marginalizada, matriz_futuro, bits_matriz_futuro)
             
             # Hacer producto tensorial con la matriz expandida
-            temporal = self.producto_tensorial_matrices(temporal, matriz_futuro_expandida, [], [key], self.__estado_inicial_subsistema, self.__estado_inicial_subsistema)
-
-            # 
-            # sub_presente = "".join([self.__sistema.get_subsistema_presente()[i] for i in self.__listado_candidatos])
-            # indices_temporal = []
-            # for i in indices_f:
-            #     matriz_futuro = self.__matriz_estado_nodo_dict[i].copy()
-            #     matriz_marginalizada = self.marginalizar_filas(sub_presente, matriz_futuro, '1')
-            #     self.__matriz_estado_nodo_marginalizadas[i] = matriz_marginalizada
-            #     temporal = self.producto_tensorial_matrices(temporal, matriz_marginalizada, indices_temporal, [i], self.__estado_inicial_subsistema, self.__estado_inicial_subsistema)
-            #     indices_temporal.append(i)
+            temporal = self.producto_tensorial_matrices(temporal, matriz_futuro_expandida, indices_temporal, [key], self.__estado_inicial_subsistema, self.__estado_inicial_subsistema)
+            indices_temporal.append(key)
+            
+        return temporal
 
     def expandir(self, matriz_marginalizada, matriz_estado_nodo, lista_presentes):
-        for indice_grande in matriz_estado_nodo.index:
-            # Obtener el índice del dataframe pequeño que corresponde al índice grande
-            indice_marginalizada = self.obtener_fila_pequeno(indice_grande, lista_presentes)
-            # Reemplazar los valores en la fila del dataframe grande
-            matriz_estado_nodo.loc[indice_grande] = matriz_marginalizada.loc[indice_marginalizada]
+        if not lista_presentes:
+            for indice_grande in matriz_estado_nodo.index:
+                matriz_estado_nodo.loc[indice_grande] = matriz_marginalizada.iloc[0]
+        else: 
+            for indice_grande in matriz_estado_nodo.index:
+                # Obtener el índice del dataframe pequeño que corresponde al índice grande
+                indice_marginalizada = self.obtener_fila_pequeno(indice_grande, lista_presentes)
+                # Reemplazar los valores en la fila del dataframe grande
+                matriz_estado_nodo.loc[indice_grande] = matriz_marginalizada.loc[indice_marginalizada]
         return matriz_estado_nodo
 
     def obtener_fila_pequeno(self, indice_grande, posiciones):
@@ -477,8 +487,15 @@ class MatrizTPM:
         # llega una lista de tuplas asi (0, 0), (1, 0)...
         # recorremos la lista y por cada una, se agrupa por la segunda posición para crear la cadena
         #(0, 0), (1, 0) (0, 2) --> aA, bA, aC --> cadena presente
+        # [[(0, 0), (1, 0)], [], [(0, 2)]] ABC
         # (A: ab),  (C: a) 
         
+        '''
+        Toma los valores futuros, genera un arreglo para cada uno y agrupa por la segunda posición.
+        
+        Retorna:
+        [[(0, 0), (1, 0)], [], [(0, 2)]] ABC
+        '''
         presentes_a_marginalizar = [[] for _ in self.__listado_valores_futuros]
         for tupla in lista_tuplas:
             try:
@@ -489,4 +506,21 @@ class MatrizTPM:
         
         ic(presentes_a_marginalizar)
         return presentes_a_marginalizar
+    
+    def matriz_conexiones(self):
+        """
+        Genera una matriz de conexiones entre nodos del subsistema presente y futuro. Para facilidad se llena todo con 1s y luego se modifica
+        """
+        # Crear la matriz de conexiones
+        matriz_conexiones = pd.DataFrame(index=self.__listado_valores_presentes, columns=self.__listado_valores_futuros)
+        
+        # Llenar la matriz con 1s en las posiciones correspondientes a las aristas
+        for arista in self.crear_conjunto_a():
+            matriz_conexiones.at[arista[0], arista[1]] = 1
+        
+        # Llenar los valores NaN con 0
+        matriz_conexiones.fillna(0, inplace=True)
+        
+        return matriz_conexiones
+    
     

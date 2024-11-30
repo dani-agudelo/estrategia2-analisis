@@ -17,9 +17,10 @@ class AlgoritmoPrincipal:
         self.__matriz.obtener_estado_nodo()
         self.__matriz.matriz_subsistema()
         self.__matriz.get_matriz_subsistema()
-        self.__matriz.prueba_marginalizar_aristas()
+        # self.__matriz.prueba_marginalizar_aristas()
+        self.__matriz.matriz_conexiones()
         # t_inicio = time.time()
-        # self.encontrar_particion_menor()
+        self.encontrar_particion_menor()
         # ic(self.comparar_particiones())
         # t_fin = time.time()
         # t_proceso = t_fin - t_inicio
@@ -37,16 +38,23 @@ class AlgoritmoPrincipal:
         for i in range(len(A) - 1):
             mejor_iteracion = () #aB, bA, bB
             for j in list(set(A) - set(W)):
+                ic(j)
                 subsistema = list(chain.from_iterable((i,) if isinstance(i[0], int) else i for i in W)) # devuelve una lista de tuplas
                 u = []
                 subsistema.extend(j if isinstance(j[0], tuple) else [j])
                 u.extend(j if isinstance(j[0], tuple) else [j])
-
+                
+                #? Dónde marginalizamos las aristas
                 resultadoEMD = self.realizar_emd(subsistema)
                 resultadoEMD_nu = self.realizar_emd(u)
 
                 resultado = resultadoEMD[0] - resultadoEMD_nu[0]
+                ic(resultado)
+                
+                #* verificar si hay partición
+                #* usar criterios para guardar la mejor partición en particiones candidatas, ojo, debe ser bipartición
 
+                
                 if mejor_iteracion == () or resultado < mejor_iteracion[0]:
                     mejor_iteracion = (resultado, j)
 
@@ -65,12 +73,10 @@ class AlgoritmoPrincipal:
     
     def realizar_emd(self, lista):
         #aA, aB (0,0), (0,1)
-        matriz_normal, matriz_complemento = self.__matriz.marginalizar_normal_complemento(lista)
-        est_n, est_c = self.__matriz.get_estado_inicial_n_c()
-        self.__matriz.limpiar_estados_inicialies()
-        resultado_tensorial = self.__matriz.producto_tensorial_matrices(matriz_normal[0], matriz_complemento[0], matriz_normal[1], matriz_complemento[1], est_n, est_c)
-        resultados_lista = np.array(resultado_tensorial.iloc[0].values.tolist(), dtype='float64')
-        return (self.__emd.emd_pyphi(resultados_lista, self.__matriz.get_matriz_subsistema()), resultados_lista)
+        experimental = self.__matriz.marginalizar_aristas(lista)
+        ic(experimental)
+        experimental = np.array(experimental.iloc[0].values.tolist(), dtype='float64')
+        return (self.__emd.emd_pyphi(experimental, self.__matriz.get_matriz_subsistema()), experimental)
 
     def combinar_tuplas(self, t1, t2):
         # Verificar si t1 y t2 son tuplas de tuplas (tupla con otros elementos tipo tuple)
