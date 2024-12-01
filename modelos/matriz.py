@@ -241,45 +241,6 @@ class MatrizTPM:
     def prueba_marginalizar_aristas(self):
         self.marginalizar_aristas([(0, 0), (1, 0), (1, 1)])
 
-    def marginalizar_bits(self, cadena_presente, cadena_futuro, bit):
-        '''
-        Marginaliza las filas y columnas de la matriz que no pertenecen al subsistema presente y futuro.
-        Bit en 1 si se quiere hacer de manera normal, 0 si se quiere el complemento.
-        '''
-        indices_futuros = self.obtener_indices(cadena_futuro, bit)
-        estado_inicial = self.generar_estado_inicial_subsistema(cadena_presente, bit)
-        if len(indices_futuros) == 1:
-            key = self.__listado_valores_futuros[indices_futuros[0]]
-            temporal = self.__matriz_estado_nodo_marginalizadas[key].copy()
-            temporal_marginalizada = self.marginalizar_filas(cadena_presente, temporal, bit)
-        else:
-            temporal = self.__matriz_no_futuro.copy()
-            temporal_marginalizada = self.marginalizar_filas(cadena_presente, temporal, bit)
-            indices_temporal = []
-            for i in indices_futuros:
-                key = self.__listado_valores_futuros[i]
-                matriz_futuro = self.__matriz_estado_nodo_marginalizadas[key].copy()
-                matriz_marginalizada = self.marginalizar_filas(cadena_presente, matriz_futuro, bit)
-                temporal_marginalizada = self.producto_tensorial_matrices(temporal_marginalizada, matriz_marginalizada, indices_temporal, [key], estado_inicial, estado_inicial)
-                indices_temporal.append(key)
-
-        return temporal_marginalizada
-    
-    def generar_estado_inicial_subsistema(self, subsistema_presente, bit):
-        for index, content in enumerate(subsistema_presente):
-            if content == bit:
-                index_estado_i = self.__listado_valores_presentes[index]
-                if bit == '1':
-                    self.__estado_i_normal += self.__sistema.get_estado_inicial()[index_estado_i]
-                else:
-                    self.__estado_i_complemento += self.__sistema.get_estado_inicial()[index_estado_i]
-        if bit == '1':
-            self.__estado_inicial_subsistema = self.__estado_i_normal
-            return self.__estado_i_normal
-        else:
-            self.__estado_inicial_subsistema = self.__estado_i_complemento
-            return self.__estado_i_complemento
-
     def marginalizar_filas(self, subsistema_presente, matriz, bit):
         """
         Marginaliza las filas de la matriz que no pertenecen al subsistema presente.

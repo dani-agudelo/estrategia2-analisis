@@ -41,18 +41,18 @@ class AlgoritmoPrincipal:
                 ic(j)
                 subsistema = list(chain.from_iterable((i,) if isinstance(i[0], int) else i for i in W)) # devuelve una lista de tuplas
                 u = []
-                subsistema.extend(j if isinstance(j[0], tuple) else [j])
+                subsistema.extend(j if isinstance(j[0], tuple) else [j]) # [(0,1), (0,0), (1,2)]
                 u.extend(j if isinstance(j[0], tuple) else [j])
                 
-                #? Dónde marginalizamos las aristas
+                #? Donde marginalizamos las aristas
                 resultadoEMD = self.realizar_emd(subsistema)
                 resultadoEMD_nu = self.realizar_emd(u)
 
                 resultado = resultadoEMD[0] - resultadoEMD_nu[0]
                 ic(resultado)
                 
-                #* verificar si hay partición
-                #* usar criterios para guardar la mejor partición en particiones candidatas, ojo, debe ser bipartición
+                #* verificar si hay particion
+                #* usar criterios para guardar la mejor particion en particiones candidatas, ojo, debe ser biparticion
 
                 
                 if mejor_iteracion == () or resultado < mejor_iteracion[0]:
@@ -77,6 +77,44 @@ class AlgoritmoPrincipal:
         ic(experimental)
         experimental = np.array(experimental.iloc[0].values.tolist(), dtype='float64')
         return (self.__emd.emd_pyphi(experimental, self.__matriz.get_matriz_subsistema()), experimental)
+    
+    '''
+    Recorre las aristas del subsistema y las elimina de la matriz de conexiones
+    Retorna la cantidad de particiones, si no hay bi o k-particion, retorna 1
+    '''
+    def revisar_particion(self, subsistema):
+        matriz_conexiones = self.__matriz.matriz_conexiones()
+        #* Aplicamos las desconexiones indicadas en el subsistema
+        for arista in subsistema:
+            matriz_conexiones[arista[0]][arista[1]] = 0
+
+        dict_conexiones = self.construir_y_combinar(matriz_conexiones)
+        return len(dict_conexiones)
+
+    '''
+    Construye grupos a partir de la matriz de conexiones y los combina si tienen elementos en comun
+    '''
+    def construir_y_combinar(self, matriz_conexiones):
+        grupos = [] # almacena los conjuntos de nodos conectados
+
+        for row_label in matriz_conexiones.index:
+            # Conjunto de columnas que tienen valor 1 en la fila actual
+            nuevo_conjunto = set(matriz_conexiones.columns[matriz_conexiones.loc[row_label] == 1])
+            
+            # Verificar interseccion con los grupos existentes
+            interseccion = False
+            for grupo in grupos:
+                if grupo & nuevo_conjunto:  # Si hay elementos en comun
+                    grupo |= nuevo_conjunto  # Combinar conjuntos
+                    interseccion = True
+                    break
+            
+            # Si no hubo interseccion, agregar como un nuevo grupo
+            if not interseccion:
+                grupos.append(nuevo_conjunto)
+
+        # Crear un nuevo diccionario con los grupos combinados
+        return {f'Grupo_{i+1}': grupo for i, grupo in enumerate(grupos)}
 
     def combinar_tuplas(self, t1, t2):
         # Verificar si t1 y t2 son tuplas de tuplas (tupla con otros elementos tipo tuple)
@@ -101,7 +139,7 @@ class AlgoritmoPrincipal:
             if i[0] < menor:
                 menor = i[0]
 
-        # Agregar las particiones con el menor EMD a la lista de particiones óptimas
+        # Agregar las particiones con el menor EMD a la lista de particiones optimas
         for i in self.__particiones_candidatas:
             if i[0] == menor:
                 particion_optima.append(i)
@@ -110,7 +148,7 @@ class AlgoritmoPrincipal:
             for i in particion_optima:
                 arreglo = i[1]
                 np.savetxt(f, arreglo, delimiter=',', fmt='%.5f')
-                f.write('\n')  # Agregar una línea en blanco entre arreglos 
+                f.write('\n')  # Agregar una linea en blanco entre arreglos 
         
         return particion_optima
     
