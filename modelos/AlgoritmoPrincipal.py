@@ -36,6 +36,7 @@ class AlgoritmoPrincipal:
             return
         W = [A[0]] #! debe ser aleatorio aA
         for i in range(len(A) - 1):
+            ic("iteracion", i)
             mejor_iteracion = () #aB, bA, bB
             for j in list(set(A) - set(W)):
                 ic(j)
@@ -44,7 +45,6 @@ class AlgoritmoPrincipal:
                 subsistema.extend(j if isinstance(j[0], tuple) else [j]) # [(0,1), (0,0), (1,2)]
                 u.extend(j if isinstance(j[0], tuple) else [j])
                 
-                #? Donde marginalizamos las aristas
                 resultadoEMD = self.realizar_emd(subsistema)
                 resultadoEMD_nu = self.realizar_emd(u)
 
@@ -52,24 +52,21 @@ class AlgoritmoPrincipal:
                 ic(resultado)
                 
                 #* verificar si hay particion
-                #* usar criterios para guardar la mejor particion en particiones candidatas, ojo, debe ser biparticion
+                res_particion= self.revisar_particion(subsistema)
+                ic(res_particion)
+    
+               #* creamos el diccionario que va a guardar toda la info para comparar
+               
+               
+                #* usar criterios para guardar la mejor iteracion en particiones candidatas, ojo, debe ser biparticion             
+                # if mejor_iteracion == () or resultado < mejor_iteracion[0]:
+                #     mejor_iteracion = (resultado, j)
 
-                
-                if mejor_iteracion == () or resultado < mejor_iteracion[0]:
-                    mejor_iteracion = (resultado, j)
-
-            W.append(mejor_iteracion[1])
+            # W.append(mejor_iteracion[1])
         
         # Tomar los dos últimos elementos de W como el par candidato
-        if len(W) >= 2:
-            self.__particiones_candidatas.append([resultadoEMD_nu[0], resultadoEMD_nu[1], (W[-1], W[:-1])])
-            par_candidato = (W[-2], W[-1])
-            # Quitar al arreglo v todos los elementos del par candidato
-            A = list(set(A) - set(par_candidato))
-            par_candidato_final = self.combinar_tuplas(par_candidato[0], par_candidato[1])
-            A.append(par_candidato_final)
-
-        self.algoritmo_principal(A)
+        # 
+        return res_particion
     
     def realizar_emd(self, lista):
         #aA, aB (0,0), (0,1)
@@ -86,9 +83,12 @@ class AlgoritmoPrincipal:
         matriz_conexiones = self.__matriz.matriz_conexiones()
         #* Aplicamos las desconexiones indicadas en el subsistema
         for arista in subsistema:
-            matriz_conexiones[arista[0]][arista[1]] = 0
+            # matriz_conexiones[arista[0]][arista[1]] = 0
+            matriz_conexiones.loc[arista[0], arista[1]] = 0
+        ic(matriz_conexiones)
 
         dict_conexiones = self.construir_y_combinar(matriz_conexiones)
+        ic(dict_conexiones)
         return len(dict_conexiones)
 
     '''
