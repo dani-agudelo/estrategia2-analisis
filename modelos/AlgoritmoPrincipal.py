@@ -10,7 +10,9 @@ class AlgoritmoPrincipal:
     def __init__(self, ruta):
         self.__matriz = MatrizTPM(ruta)
         self.__emd = MetricasDistancia()
-        self.__particiones_candidatas = []
+        self.__lista_biparticiones = []
+        self.__lista_kparticiones = []
+        self.__menor_biparticion = None
 
     def estrategia2(self):
         self.__matriz.condiciones_de_background()
@@ -21,6 +23,7 @@ class AlgoritmoPrincipal:
         self.__matriz.matriz_conexiones()
         # t_inicio = time.time()
         self.encontrar_particion_menor()
+        ic(self.__lista_biparticiones)
         # ic(self.comparar_particiones())
         # t_fin = time.time()
         # t_proceso = t_fin - t_inicio
@@ -28,50 +31,89 @@ class AlgoritmoPrincipal:
 
     def encontrar_particion_menor(self):
         conjuntoA= self.__matriz.crear_conjunto_a()
-        ic(conjuntoA) # (0,0), (0,1), (1,0), (1,1)
-        self.algoritmo_principal(conjuntoA)
+        self.algoritmo_principal(conjuntoA, 1)
 
-    def algoritmo_principal(self, A): 
+    def algoritmo_principal(self, A, counter): 
         if(len(A) == 1):
             return
         W = [A[0]] #! debe ser aleatorio aA
         for i in range(len(A) - 1):
-            ic("iteracion", i)
-            mejor_iteracion = () #aB, bA, bB
+            mejor_iteracion = None #aB, bA, bB
             for j in list(set(A) - set(W)):
-                ic(j)
                 subsistema = list(chain.from_iterable((i,) if isinstance(i[0], int) else i for i in W)) # devuelve una lista de tuplas
                 u = []
                 subsistema.extend(j if isinstance(j[0], tuple) else [j]) # [(0,1), (0,0), (1,2)]
                 u.extend(j if isinstance(j[0], tuple) else [j])
                 
-                resultadoEMD = self.realizar_emd(subsistema)
-                resultadoEMD_nu = self.realizar_emd(u)
+                resultado_union = self.realizar_emd(subsistema)
+                resultado_u = self.realizar_emd(u)
 
-                resultado = resultadoEMD[0] - resultadoEMD_nu[0]
-                ic(resultado)
+                diferencia = resultado_union[0] - resultado_u[0]
                 
                 #* verificar si hay particion
-                res_particion= self.revisar_particion(subsistema)
-                ic(res_particion)
-    
-               #* creamos el diccionario que va a guardar toda la info para comparar
-               
-               
-                #* usar criterios para guardar la mejor iteracion en particiones candidatas, ojo, debe ser biparticion             
-                # if mejor_iteracion == () or resultado < mejor_iteracion[0]:
-                #     mejor_iteracion = (resultado, j)
+                particion = self.revisar_particion(subsistema)
+                cantidad_particiones = len(particion)
+                
+                #* creamos una lista de diccionarios que va a guardar toda la info para comparar
+                #* guardamos resultadoEMD, resultadoEMD_nu, resultado, particion, y el j. Cada diccionario es de una iteracion
+                if cantidad_particiones >= 2:
+                    dict_particion = {
+                        'particion': particion,
+                        'resultado_union': resultado_union,
+                        'resta_union_u': diferencia,
+                        'N_particiones': cantidad_particiones,
+                        'iteracion': j,
+                        'nivel_recursion': counter
+                    }
+                    self.__lista_biparticiones.append(dict_particion) if cantidad_particiones == 2 else self.__lista_kparticiones.append(dict_particion)
 
-            # W.append(mejor_iteracion[1])
+                    if cantidad_particiones == 2:
+                        if self.__menor_biparticion:
+                            if resultado_union[0] < self.__menor_biparticion['resultado_union'][0]:
+                                self.__menor_biparticion = dict_particion
+                            elif resultado_union[0] == self.__menor_biparticion['resultado_union'][0]:
+                                if diferencia < self.__menor_biparticion['resta_union_u']:
+                                    self.__menor_biparticion = dict_particion
+                        else:
+                            self.__menor_biparticion = dict_particion
+                        ic(self.__menor_biparticion)
+                        print("\n")
+                        print("---------------------------------------------------------------------------")
+                        print("\n")
+
+                if mejor_iteracion is None or diferencia < mejor_iteracion['resta_union_u']:
+                    mejor_iteracion = {
+                        'resultado_union': resultado_union,
+                        'resta_union_u': diferencia,
+                        'arista': j
+                    }
+                elif diferencia == mejor_iteracion['resta_union_u']:
+                    if resultado_union[0] < mejor_iteracion['resultado_union'][0]:
+                        mejor_iteracion = {
+                            'resultado_union': resultado_union,
+                            'resta_union_u': diferencia,
+                            'arista': j
+                        }
+
+            W.append(mejor_iteracion['arista'])
         
-        # Tomar los dos últimos elementos de W como el par candidato
-        # 
-        return res_particion
+        
+        if len(W) >= 2:
+            par_candidato = (W[-2], W[-1]) 
+            # Quitar al arreglo v todos los elementos del par candidato
+            A = list(set(A) - set(par_candidato))
+            par_candidato_final = self.combinar_tuplas(par_candidato[0], par_candidato[1])
+            A.append(par_candidato_final)
+            
+        self.algoritmo_principal(A, counter + 1)
     
+    '''
+    Marginaliza segun la lista y devuelve el emd y la distribucion en una tupla
+    la primera posicion es el emd y la segunda es la distribucion
+    '''
     def realizar_emd(self, lista):
         #aA, aB (0,0), (0,1)
         experimental = self.__matriz.marginalizar_aristas(lista)
-        ic(experimental)
         experimental = np.array(experimental.iloc[0].values.tolist(), dtype='float64')
         return (self.__emd.emd_pyphi(experimental, self.__matriz.get_matriz_subsistema()), experimental)
     
@@ -85,36 +127,52 @@ class AlgoritmoPrincipal:
         for arista in subsistema:
             # matriz_conexiones[arista[0]][arista[1]] = 0
             matriz_conexiones.loc[arista[0], arista[1]] = 0
-        ic(matriz_conexiones)
 
-        dict_conexiones = self.construir_y_combinar(matriz_conexiones)
-        ic(dict_conexiones)
-        return len(dict_conexiones)
+        dict_conexiones = {
+            row_label: set(matriz_conexiones.columns[matriz_conexiones.loc[row_label] == 1])
+            for row_label in matriz_conexiones.index
+        }
+
+        dict_conexiones = self.combinar_grupos(matriz_conexiones, dict_conexiones)
+        
+        return dict_conexiones
 
     '''
     Construye grupos a partir de la matriz de conexiones y los combina si tienen elementos en comun
     '''
-    def construir_y_combinar(self, matriz_conexiones):
-        grupos = [] # almacena los conjuntos de nodos conectados
+    def combinar_grupos(self, matriz, diccionario):
+        # Grupos finales: lista donde cada elemento será una tupla (filas, columnas)
+        grupos = []
 
-        for row_label in matriz_conexiones.index:
-            # Conjunto de columnas que tienen valor 1 en la fila actual
-            nuevo_conjunto = set(matriz_conexiones.columns[matriz_conexiones.loc[row_label] == 1])
-            
-            # Verificar interseccion con los grupos existentes
-            interseccion = False
-            for grupo in grupos:
-                if grupo & nuevo_conjunto:  # Si hay elementos en comun
-                    grupo |= nuevo_conjunto  # Combinar conjuntos
-                    interseccion = True
-                    break
-            
-            # Si no hubo interseccion, agregar como un nuevo grupo
-            if not interseccion:
-                grupos.append(nuevo_conjunto)
+        # Convertir el diccionario en una lista de tuplas (fila, columnas asociadas)
+        entradas = [(set([fila]), set(columnas)) for fila, columnas in diccionario.items()]
+        
+        while entradas:
+            filas_actuales, columnas_actuales = entradas.pop(0)
+            grupos_a_combinar = []
 
-        # Crear un nuevo diccionario con los grupos combinados
-        return {f'Grupo_{i+1}': grupo for i, grupo in enumerate(grupos)}
+            # Buscar intersección con los grupos existentes
+            for i, (filas, columnas) in enumerate(grupos):
+                if filas & filas_actuales or columnas & columnas_actuales:
+                    grupos_a_combinar.append(i)
+
+            # Combinar todos los grupos relacionados
+            for i in sorted(grupos_a_combinar, reverse=True):  # Combinar desde el último hacia el primero
+                filas, columnas = grupos.pop(i)
+                filas_actuales |= filas
+                columnas_actuales |= columnas
+
+            # Agregar el grupo combinado o nuevo
+            grupos.append((filas_actuales, columnas_actuales))
+
+        # Verificar columnas llenas de ceros
+        columnas_sin_uso = set(matriz.columns[matriz.sum(axis=0) == 0])
+        for columna in columnas_sin_uso:
+            grupos.append((set(), {columna}))
+
+        # Convertir los grupos en un diccionario final
+        return {f'Grupo_{i+1}': (filas, columnas) for i, (filas, columnas) in enumerate(grupos)}
+
 
     def combinar_tuplas(self, t1, t2):
         # Verificar si t1 y t2 son tuplas de tuplas (tupla con otros elementos tipo tuple)

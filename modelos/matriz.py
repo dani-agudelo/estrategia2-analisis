@@ -465,7 +465,6 @@ class MatrizTPM:
             except ValueError:
                 print(f"Indice {tupla[1]} no encontrado en la lista de valores futuros.")
         
-        ic(presentes_a_marginalizar)
         return presentes_a_marginalizar
     
     def matriz_conexiones(self):
