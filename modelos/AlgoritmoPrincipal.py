@@ -3,6 +3,7 @@ from modelos.matriz import MatrizTPM
 from icecream import ic
 from modelos.MetricasDistancia import MetricasDistancia
 import numpy as np
+import random
 from itertools import chain
 
 
@@ -36,7 +37,9 @@ class AlgoritmoPrincipal:
     def algoritmo_principal(self, A, counter): 
         if(len(A) == 1):
             return
-        W = [A[0]] #! debe ser aleatorio aA
+        posicion_aleatoria = random.randint(0, len(A) - 1)
+        W = [A[posicion_aleatoria]]
+        
         for i in range(len(A) - 1):
             mejor_iteracion = None #aB, bA, bB
             for j in list(set(A) - set(W)):
@@ -63,7 +66,8 @@ class AlgoritmoPrincipal:
                         'resta_union_u': diferencia,
                         'N_particiones': cantidad_particiones,
                         'iteracion': j,
-                        'nivel_recursion': counter
+                        'nivel_recursion': counter,
+                        'dist_original': self.__matriz.get_matriz_subsistema()
                     }
                     self.__lista_biparticiones.append(dict_particion) if cantidad_particiones == 2 else self.__lista_kparticiones.append(dict_particion)
 
