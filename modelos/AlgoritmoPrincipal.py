@@ -20,15 +20,14 @@ class AlgoritmoPrincipal:
         self.__matriz.obtener_estado_nodo()
         self.__matriz.matriz_subsistema()
         self.__matriz.get_matriz_subsistema()
-        # self.__matriz.prueba_marginalizar_aristas()
         self.__matriz.matriz_conexiones()
-        # t_inicio = time.time()
+        t_inicio = time.time()
         self.encontrar_particion_menor()
-        ic(self.__lista_biparticiones)
-        # ic(self.comparar_particiones())
-        # t_fin = time.time()
-        # t_proceso = t_fin - t_inicio
-        # ic(t_proceso)
+        t_fin = time.time()
+        t_proceso = t_fin - t_inicio
+        ic(t_proceso)
+        self.guardar_biparticiones()
+        self.guardar_kparticiones()
 
     def encontrar_particion_menor(self):
         conjuntoA= self.__matriz.crear_conjunto_a()
@@ -36,6 +35,7 @@ class AlgoritmoPrincipal:
 
     def algoritmo_principal(self, A, counter): 
         if(len(A) == 1):
+            ic(self.__menor_biparticion)
             return
         posicion_aleatoria = random.randint(0, len(A) - 1)
         W = [A[posicion_aleatoria]]
@@ -65,7 +65,7 @@ class AlgoritmoPrincipal:
                         'resultado_union': resultado_union,
                         'resta_union_u': diferencia,
                         'N_particiones': cantidad_particiones,
-                        'iteracion': j,
+                        'iteracion': i,
                         'nivel_recursion': counter,
                         'dist_original': self.__matriz.get_matriz_subsistema()
                     }
@@ -80,10 +80,6 @@ class AlgoritmoPrincipal:
                                     self.__menor_biparticion = dict_particion
                         else:
                             self.__menor_biparticion = dict_particion
-                        ic(self.__menor_biparticion)
-                        print("\n")
-                        print("---------------------------------------------------------------------------")
-                        print("\n")
 
                 if mejor_iteracion is None or diferencia < mejor_iteracion['resta_union_u']:
                     mejor_iteracion = {
@@ -116,7 +112,7 @@ class AlgoritmoPrincipal:
     la primera posicion es el emd y la segunda es la distribucion
     '''
     def realizar_emd(self, lista):
-        #aA, aB (0,0), (0,1)
+        # Obtenemos la distribución experimental
         experimental = self.__matriz.marginalizar_aristas(lista)
         experimental = np.array(experimental.iloc[0].values.tolist(), dtype='float64')
         return (self.__emd.emd_pyphi(experimental, self.__matriz.get_matriz_subsistema()), experimental)
@@ -192,32 +188,16 @@ class AlgoritmoPrincipal:
         # Combinar ambos resultados en una sola tupla
         return t1 + t2
 
-    def comparar_particiones(self):
-        particion_optima = []
-        menor = self.__particiones_candidatas[0][0]
-
-        # Buscar el menor EMD
-        for i in self.__particiones_candidatas:
-            if i[0] < menor:
-                menor = i[0]
-
-        # Agregar las particiones con el menor EMD a la lista de particiones optimas
-        for i in self.__particiones_candidatas:
-            if i[0] == menor:
-                particion_optima.append(i)
-
-        with open('archivos/particion_optima.txt', 'w') as f:
-            for i in particion_optima:
-                arreglo = i[1]
-                np.savetxt(f, arreglo, delimiter=',', fmt='%.5f')
-                f.write('\n')  # Agregar una linea en blanco entre arreglos 
-        
-        return particion_optima
-    
-    def guardar_en_archivo(self, contenido, ruta):
-        with open(ruta, "w") as archivo:
-            archivo.write(str(contenido))  # Escribir el contenido como texto
-            
-    
+    # metodo que guarda en un archivo la lista de biparticiones
+    def guardar_biparticiones(self):
+        with open('archivos/biparticiones.txt', 'w') as file:
+            for particion in self.__lista_biparticiones:
+                file.write(f'{particion}\n')
+                file.write('---\n')  # Separador visual entre particiones
    
+    def guardar_kparticiones(self):
+        with open('archivos/kparticiones.txt', 'w') as file:
+            for particion in self.__lista_kparticiones:
+                file.write(f'{particion}\n')
+                file.write('---\n')
  
