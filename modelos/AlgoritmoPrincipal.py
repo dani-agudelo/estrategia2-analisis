@@ -22,13 +22,13 @@ class AlgoritmoPrincipal:
         self.__matriz.get_matriz_subsistema()
         # self.__matriz.prueba_marginalizar_aristas()
         self.__matriz.matriz_conexiones()
-        # t_inicio = time.time()
+        t_inicio = time.time()
         self.encontrar_particion_menor()
-        ic(self.__lista_biparticiones)
+        # ic(self.__lista_biparticiones)
         # ic(self.comparar_particiones())
-        # t_fin = time.time()
-        # t_proceso = t_fin - t_inicio
-        # ic(t_proceso)
+        t_fin = time.time()
+        t_proceso = t_fin - t_inicio
+        ic(t_proceso)
 
     def encontrar_particion_menor(self):
         conjuntoA= self.__matriz.crear_conjunto_a()
@@ -36,6 +36,9 @@ class AlgoritmoPrincipal:
 
     def algoritmo_principal(self, A, counter): 
         if(len(A) == 1):
+            ic(self.__menor_biparticion)
+            self.guardar_biparticiones()
+            self.guardar_kparticiones()
             return
         posicion_aleatoria = random.randint(0, len(A) - 1)
         W = [A[posicion_aleatoria]]
@@ -61,11 +64,12 @@ class AlgoritmoPrincipal:
                 #* guardamos resultadoEMD, resultadoEMD_nu, resultado, particion, y el j. Cada diccionario es de una iteracion
                 if cantidad_particiones >= 2:
                     dict_particion = {
+                        'subsistema': subsistema,
                         'particion': particion,
                         'resultado_union': resultado_union,
                         'resta_union_u': diferencia,
                         'N_particiones': cantidad_particiones,
-                        'iteracion': j,
+                        'iteracion': i,
                         'nivel_recursion': counter,
                         'dist_original': self.__matriz.get_matriz_subsistema()
                     }
@@ -80,10 +84,6 @@ class AlgoritmoPrincipal:
                                     self.__menor_biparticion = dict_particion
                         else:
                             self.__menor_biparticion = dict_particion
-                        ic(self.__menor_biparticion)
-                        print("\n")
-                        print("---------------------------------------------------------------------------")
-                        print("\n")
 
                 if mejor_iteracion is None or diferencia < mejor_iteracion['resta_union_u']:
                     mejor_iteracion = {
@@ -218,6 +218,15 @@ class AlgoritmoPrincipal:
         with open(ruta, "w") as archivo:
             archivo.write(str(contenido))  # Escribir el contenido como texto
             
-    
+    # metodo que guarda en un archivo la lista de biparticiones
+    def guardar_biparticiones(self):
+        with open('archivos/biparticiones.txt', 'w') as file:
+            for particion in self.__lista_biparticiones:
+                file.write(f'{particion}\n')
+                file.write('---\n')  # Separador visual entre particiones
    
- 
+    def guardar_kparticiones(self):
+        with open('archivos/kparticiones.txt', 'w') as file:
+            for particion in self.__lista_kparticiones:
+                file.write(f'{particion}\n')
+                file.write('---\n')
